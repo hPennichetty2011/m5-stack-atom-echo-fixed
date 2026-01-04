@@ -297,7 +297,7 @@ script:
           then:
             - micro_wake_word.stop:
 
-  # ✅ NEW — stops everything immediately
+
   - id: stop_assistant
     then:
       - voice_assistant.stop:
@@ -384,3 +384,4 @@ micro_wake_word:
     - model: okay_nabu
     - model: hey_mycroft
     - model: hey_jarvis
+
