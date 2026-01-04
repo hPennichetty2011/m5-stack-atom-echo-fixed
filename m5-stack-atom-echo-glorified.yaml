@@ -52,7 +52,7 @@ speaker:
     dac_type: external
     bits_per_sample: 16bit
     sample_rate: 16000
-    channel: stereo  # The Echo has poor playback audio quality when using mon audio
+    channel: stereo
     buffer_duration: 60ms
 
 media_player:
@@ -120,12 +120,10 @@ voice_assistant:
         brightness: 100%
         effect: "Slow Pulse"
   on_end:
-    # Handle the "nevermind" case where there is no announcement
     - wait_until:
         condition:
           - media_player.is_announcing:
         timeout: 0.5s
-    # Restart only mWW if enabled; streaming wake words automatically restart
     - if:
         condition:
           - lambda: |-
@@ -151,7 +149,7 @@ voice_assistant:
     - delay: 2s
     - script.execute: reset_led
   on_client_connected:
-    - delay: 2s  # Give the api server time to settle
+    - delay: 2s
     - script.execute: start_wake_word
   on_client_disconnected:
     - script.execute: stop_wake_word
@@ -174,9 +172,6 @@ voice_assistant:
     - switch.turn_off: timer_ringing
 
 binary_sensor:
-  # button does the following:
-  # short click - stop a timer
-  # if no timer then restart either microwakeword or voice assistant continuous
   - platform: gpio
     pin:
       number: GPIO39
@@ -196,7 +191,7 @@ binary_sensor:
               then:
                 - switch.turn_off: timer_ringing
               else:
-                - script.execute: start_wake_word
+                - script.execute: stop_assistant
       - timing:
           - ON for at least 10s
         then:
@@ -262,6 +257,7 @@ script:
                       blue: 100%
                       brightness: 100%
                       effect: none
+
   - id: start_wake_word
     then:
       - if:
@@ -284,6 +280,7 @@ script:
           then:
             - lambda: id(va).set_use_wake_word(true);
             - voice_assistant.start_continuous:
+
   - id: stop_wake_word
     then:
       - if:
@@ -300,6 +297,15 @@ script:
           then:
             - micro_wake_word.stop:
 
+  # ✅ NEW — stops everything immediately
+  - id: stop_assistant
+    then:
+      - voice_assistant.stop:
+      - micro_wake_word.stop:
+      - media_player.stop:
+          announcement: true
+      - script.execute: reset_led
+
 switch:
   - platform: template
     name: Use listen light
@@ -311,12 +317,12 @@ switch:
       - script.execute: reset_led
     on_turn_off:
       - script.execute: reset_led
+
   - platform: template
     id: timer_ringing
     optimistic: true
     restore_mode: ALWAYS_OFF
     on_turn_off:
-      # Turn off the repeat mode and disable the pause between playlist items
       - lambda: |-
               id(echo_media_player)
                 ->make_call()
@@ -324,11 +330,9 @@ switch:
                 .set_announcement(true)
                 .perform();
               id(echo_media_player)->set_playlist_delay_ms(speaker::AudioPipelineType::ANNOUNCEMENT, 0);
-      # Stop playing the alarm
       - media_player.stop:
           announcement: true
     on_turn_on:
-      # Turn on the repeat mode and pause for 1000 ms between playlist items/repeats
       - lambda: |-
             id(echo_media_player)
               ->make_call()
