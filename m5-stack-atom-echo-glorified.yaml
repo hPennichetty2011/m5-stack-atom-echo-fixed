@@ -91,7 +91,7 @@ voice_assistant:
   microphone:
     microphone: echo_microphone
     channels: 0
-    gain_factor: 6
+    gain_factor: 4
   media_player: echo_media_player
   noise_suppression_level: 2
   auto_gain: 31dBFS
@@ -384,6 +384,7 @@ micro_wake_word:
     - model: okay_nabu
     - model: hey_mycroft
     - model: hey_jarvis
+
 
 
 
